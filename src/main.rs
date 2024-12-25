@@ -8,6 +8,7 @@ struct OasisBytes {}
 impl OasisBytes {
     const MAGIC_BYTES: &'static str = "%SEMI-OASIS\r\n";
     const CURVI_MAGIC_BYTES: &'static str = "%SEMI-OASIS-CURVILINEAR\r\n";
+    const VERSION_STRING: &'static str = "1.0";
 }
 
 struct RecordType {}
@@ -64,9 +65,12 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn int_to_byte_array(n: impl num::integer::Integer) -> Vec<u8> {
-    let x: u8 = 2;
-    (&[x]).to_vec()
+// see https://stackoverflow.com/questions/28273169/how-do-i-convert-between-numeric-types-safely-and-idiomatically
+fn write_uns_int(n: impl num::integer::Integer, bw: &mut BufWriter<File>) -> std::io::Result<()> {
+    let c: u8 = 7;   /*least significant byte of n*/
+
+    bw.write_all(&[c]);
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
@@ -75,11 +79,9 @@ fn main() -> std::io::Result<()> {
     let mut bw = BufWriter::new(f);
 
     bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
-    bw.write_all(&[RecordType::START])?;
-    bw.write_all(&[RecordType::END])?;
+    write_uns_int(RecordType::START,&mut bw)?;
+    write_uns_int(RecordType::END,&mut bw)?;
     bw.flush()?;    // How often do we need to flush?
-
-    int_to_byte_array(55);
 
     read_oasis_file("test.oas")?;
 
