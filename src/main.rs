@@ -1,6 +1,15 @@
+// Disk io
 use std::fs::File;
 use std::io::prelude::*;
 use std::fs;
+use std::io::BufWriter;
+
+struct OasisBytes {}
+
+impl OasisBytes {
+    const MAGIC_BYTES: &str = "%SEMI-OASIS\r\n";
+    const CURVI_MAGIC_BYTES: &str = "%SEMI-OASIS-CURVILINEAR\r\n";
+}
 
 struct RecordType {}
 
@@ -21,16 +30,15 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
 
 fn main() -> std::io::Result<()> {
 
-    const MAGIC_BYTES: &str = "%SEMI-OASIS\r\n";
-    const CURVI_MAGIC_BYTES: &str = "%SEMI-OASIS-CURVILINEAR\r\n";
-
     let mut f = File::create("test.oas")?;
-    f.write_all(MAGIC_BYTES.as_bytes())?;
+    let mut bw = BufWriter::new(f);
+
+    bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
+    bw.write_all(&[RecordType::START])?;
+    bw.write_all(&[RecordType::END])?;
+    bw.flush()?;    // How often do we need to flush?
 
     read_oasis_file("test.oas")?;
-
-    println!("{}",RecordType::START);
-    println!("{}",RecordType::END);
 
     Ok(())
 }
