@@ -4,6 +4,8 @@ use std::io::prelude::*;
 use std::io::BufWriter;
 use std::io::Write;
 
+use std::mem::size_of;
+
 struct OasisBytes {}
 
 impl OasisBytes {
@@ -67,10 +69,18 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
 }
 
 // see https://stackoverflow.com/questions/28273169/how-do-i-convert-between-numeric-types-safely-and-idiomatically
-fn write_uns_int(n: impl num::integer::Integer, bw: &mut impl Write) -> std::io::Result<()> {
+fn write_uns_int<T>(
+    n: T,
+    bw: &mut impl Write
+) -> std::io::Result<()> where T: num::integer::Integer + num::Unsigned{
     
-    //const VALUE_MASK = 
+    const CONTINUE_MASK: u8 = 1 << 7;
+    const VALUE_MASK: u8 = !CONTINUE_MASK;
+    
+
     let c: u8 = 7;   /*least significant byte of n*/
+
+    println!("Size of unsigned int to write: {}",size_of::<T>());
 
     bw.write_all(&[c]);
     Ok(())
