@@ -2,6 +2,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
+use std::io::Write;
 
 struct OasisBytes {}
 
@@ -66,7 +67,9 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
 }
 
 // see https://stackoverflow.com/questions/28273169/how-do-i-convert-between-numeric-types-safely-and-idiomatically
-fn write_uns_int(n: impl num::integer::Integer, bw: &mut BufWriter<File>) -> std::io::Result<()> {
+fn write_uns_int(n: impl num::integer::Integer, bw: &mut impl Write) -> std::io::Result<()> {
+    
+    //const VALUE_MASK = 
     let c: u8 = 7;   /*least significant byte of n*/
 
     bw.write_all(&[c]);
@@ -81,7 +84,7 @@ fn main() -> std::io::Result<()> {
     bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
     write_uns_int(RecordType::START,&mut bw)?;
     write_uns_int(RecordType::END,&mut bw)?;
-    bw.flush()?;    // How often do we need to flush?
+    bw.flush()?;
 
     read_oasis_file("test.oas")?;
 
