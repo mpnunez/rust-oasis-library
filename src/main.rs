@@ -5,6 +5,7 @@ use std::io::BufWriter;
 use std::io::Write;
 
 use std::mem::size_of;
+use std::ops::BitAnd;
 
 struct OasisBytes {}
 
@@ -72,17 +73,26 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
 fn write_uns_int<T>(
     n: T,
     bw: &mut impl Write
-) -> std::io::Result<()> where T: num::integer::Integer + num::Unsigned{
+) -> std::io::Result<()>
+    where T: num::integer::Integer
+        + num::Unsigned
+        + std::ops::Shr<i32>
+    {
     
     const CONTINUE_MASK: u8 = 1 << 7;
     const VALUE_MASK: u8 = !CONTINUE_MASK;
+
+    let mut next_byte = n as u8;
+    next_byte = next_byte & VALUE_MASK;
+
+    let remainder = n >> 7;
     
 
-    let c: u8 = 7;   /*least significant byte of n*/
+    //let c: u8 = 7;   /*least significant byte of n*/
 
     println!("Size of unsigned int to write: {}",size_of::<T>());
 
-    bw.write_all(&[c]);
+    bw.write_all(&[next_byte]);
     Ok(())
 }
 
