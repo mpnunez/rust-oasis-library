@@ -5,11 +5,8 @@ use std::io::BufWriter;
 use std::io::Write;
 
 use std::mem::size_of;
-use std::ops::BitAnd;
 use std::convert::TryInto;
 use std::fmt::Debug;
-use std::ops::Shl;
-use std::ops::Shr;
 
 struct OasisBytes {}
 
@@ -91,14 +88,27 @@ fn write_uns_int<T>(
     const CONTINUE_MASK: u8 = 1 << 7;
     const VALUE_MASK: u8 = !CONTINUE_MASK;
 
-    //let t_size_bytes = size_of::<T>();
-    let n_next_value = n >> 7;
-    let n_u8_value = n - (n_next_value << 7);
-    let mut n_u8_value_u8: u8 = n_u8_value.try_into()
-        .expect("Value does not fit into u8");
-        
-    let next_byte =  n_u8_value_u8 & VALUE_MASK; // ((n_next_value > 0) << 7) |
-    bw.write_all(&[next_byte]);
+    let mut current_value = n;
+
+    loop {
+        let n_next_value = current_value >> 7;
+        let n_u8_value = current_value - (n_next_value << 7);
+        let n_u8_value_u8: u8 = n_u8_value.try_into()
+            .expect("Value does not fit into u8");
+            
+        let mut next_byte =  n_u8_value_u8 & VALUE_MASK;
+        if n_next_value > T::zero() {
+            next_byte = CONTINUE_MASK | next_byte;
+        }
+        bw.write_all(&[next_byte])?;
+
+        if n_next_value == T::zero() {
+            break;
+        } else {
+            current_value = n_next_value;
+        }
+    }
+    
     
     Ok(())
 }
@@ -112,8 +122,8 @@ fn main() -> std::io::Result<()> {
     write_uns_int(RecordType::START,&mut bw)?;
     write_uns_int(RecordType::END,&mut bw)?;
 
-    let bigger: u32 = 99999;
-    write_uns_int(bigger,&mut bw);
+    let bigger: u32 = 128;
+    write_uns_int(bigger,&mut bw)?;
     bw.flush()?;
 
     read_oasis_file("test.oas")?;
