@@ -8,6 +8,8 @@ use std::mem::size_of;
 use std::ops::BitAnd;
 use std::convert::TryInto;
 use std::fmt::Debug;
+use std::ops::Shl;
+use std::ops::Shr;
 
 struct OasisBytes {}
 
@@ -78,26 +80,26 @@ fn write_uns_int<T>(
 ) -> std::io::Result<()>
     where T: num::integer::Integer
         + num::Unsigned
-        + TryInto<u8> + From<u8> + PartialOrd + std::ops::Shr<i32>  + Copy
+        + std::ops::Shl<i32, Output = T>
+        + std::ops::Shr<i32, Output = T>
+        + Copy
+        + TryInto<u8>
         , <T as TryInto<u8>>::Error: Debug
-        //std::ops::Shr<i32> + Copy, u8: From<T>,
         
     {
     
     const CONTINUE_MASK: u8 = 1 << 7;
     const VALUE_MASK: u8 = !CONTINUE_MASK;
 
-    let mut next_byte: u8 = n.try_into().unwrap();
-    //let mut next_byte: u8 = n as u8;
-    next_byte = next_byte & VALUE_MASK;
-
-    let remainder = n >> 7;
-    
-    //let c: u8 = 7;   /*least significant byte of n*/
-
-    println!("Size of unsigned int to write: {}",size_of::<T>());
-
+    //let t_size_bytes = size_of::<T>();
+    let n_next_value = n >> 7;
+    let n_u8_value = n - (n_next_value << 7);
+    let mut n_u8_value_u8: u8 = n_u8_value.try_into()
+        .expect("Value does not fit into u8");
+        
+    let next_byte =  n_u8_value_u8 & VALUE_MASK; // ((n_next_value > 0) << 7) |
     bw.write_all(&[next_byte]);
+    
     Ok(())
 }
 
