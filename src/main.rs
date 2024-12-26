@@ -6,6 +6,8 @@ use std::io::Write;
 
 use std::mem::size_of;
 use std::ops::BitAnd;
+use std::convert::TryInto;
+use std::fmt::Debug;
 
 struct OasisBytes {}
 
@@ -76,16 +78,20 @@ fn write_uns_int<T>(
 ) -> std::io::Result<()>
     where T: num::integer::Integer
         + num::Unsigned
-        + std::ops::Shr<i32>, u8: From<T>
+        + TryInto<u8> + From<u8> + PartialOrd + std::ops::Shr<i32>  + Copy
+        , <T as TryInto<u8>>::Error: Debug
+        //std::ops::Shr<i32> + Copy, u8: From<T>,
+        
     {
     
     const CONTINUE_MASK: u8 = 1 << 7;
     const VALUE_MASK: u8 = !CONTINUE_MASK;
 
-    let mut next_byte: u8 = u8::try_from(n).unwrap();
+    let mut next_byte: u8 = n.try_into().unwrap();
+    //let mut next_byte: u8 = n as u8;
     next_byte = next_byte & VALUE_MASK;
 
-    //let remainder = n >> 7;
+    let remainder = n >> 7;
     
     //let c: u8 = 7;   /*least significant byte of n*/
 
@@ -103,6 +109,9 @@ fn main() -> std::io::Result<()> {
     bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
     write_uns_int(RecordType::START,&mut bw)?;
     write_uns_int(RecordType::END,&mut bw)?;
+
+    let bigger: u32 = 99999;
+    write_uns_int(bigger,&mut bw);
     bw.flush()?;
 
     read_oasis_file("test.oas")?;
