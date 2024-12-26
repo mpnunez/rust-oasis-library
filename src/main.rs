@@ -64,6 +64,29 @@ fn write_uns_int<T>(
     Ok(())
 }
 
+
+fn write_sgn_as_uns_int<T>(
+    n: T,
+    bw: &mut impl Write
+) -> std::io::Result<()>
+    where T: num::integer::Integer
+        + num::Signed
+        + std::fmt::Display
+    {
+        if n < T::zero() {
+            return Err(
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Negative number cannot be written as unsigned integer"
+                )
+            );
+        }
+
+        let n_abs = num::abs(n);
+        println!("Want to write {}", n_abs);
+        Ok(())
+    }
+
 fn main() -> std::io::Result<()> {
 
     let f = File::create("test.oas")?;
@@ -73,8 +96,16 @@ fn main() -> std::io::Result<()> {
     write_uns_int(RecordType::START,&mut bw)?;
     write_uns_int(RecordType::END,&mut bw)?;
 
+    // Make these unit tests
     let bigger: u32 = 128;
     write_uns_int(bigger,&mut bw)?;
+
+    let signed_int: i32 = 4000;
+    write_sgn_as_uns_int::<i32>(signed_int,&mut bw)?;
+
+    let signed_int_neg: i32 = -4000;
+    write_sgn_as_uns_int::<i32>(signed_int_neg,&mut bw)?;
+
     bw.flush()?;
 
     read_oasis_file("test.oas")?;
