@@ -12,7 +12,7 @@ use oasis_bytes::OasisBytes;
 mod record_type;
 use record_type::RecordType;
 mod write_bytes;
-use write_bytes::{write_uns_int,write_sgn_as_uns_int};
+use write_bytes::write_uns_int;
 
 
 fn read_oasis_file(fname: &str) -> std::io::Result<()> {

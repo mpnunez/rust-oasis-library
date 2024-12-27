@@ -2,6 +2,27 @@ use std::io::Write;
 use std::convert::TryInto;
 use std::fmt::Debug;
 
+use num::Zero;
+
+pub trait SgnToUns {
+    type UnsignedType;
+
+    fn to_uns(&self) -> Result<Self::UnsignedType,()>;
+}
+
+impl SgnToUns for i32 {
+    type UnsignedType = u32;
+
+    fn to_uns(&self) -> Result<Self::UnsignedType,()> {
+        if *self < i32::zero() {
+            return Err(()); // Should print out value that failed to convert
+        }
+        unsafe {
+            Ok(std::mem::transmute::<i32, Self::UnsignedType>(*self))
+        }
+    }
+}
+
 pub fn write_uns_int<T>(
     n: T,
     bw: &mut impl Write
@@ -39,31 +60,7 @@ pub fn write_uns_int<T>(
             current_value = n_next_value;
         }
     }
-    
-    
-    Ok(())
-}
 
-
-pub fn write_sgn_as_uns_int<T>(
-    n: T,
-    bw: &mut impl Write
-) -> std::io::Result<()>
-    where T: num::integer::Integer
-        + num::Signed
-        + std::fmt::Display
-{
-    if n < T::zero() {
-        return Err(
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Negative number cannot be written as unsigned integer"
-            )
-        );
-    }
-
-    let n_abs = num::abs(n);
-    println!("Want to write {}", n_abs);
     Ok(())
 }
 
@@ -84,15 +81,13 @@ mod tests {
     fn write_2(){
         let mut bw = Vec::<u8>::new();
         let signed_int: i32 = 4000;
-        let result = write_sgn_as_uns_int::<i32>(signed_int,&mut bw);
+        let result = write_uns_int(signed_int.to_uns().unwrap(),&mut bw);
         assert!(result.is_ok());
     }
 
     #[test]
     fn write_3(){
-        let mut bw = Vec::<u8>::new();
         let signed_int_neg: i32 = -4000;
-        let result = write_sgn_as_uns_int::<i32>(signed_int_neg,&mut bw);
-        assert!(result.is_err());
+        assert!(signed_int_neg.to_uns().is_err());
     }
 }
