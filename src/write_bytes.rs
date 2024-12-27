@@ -2,27 +2,6 @@ use std::io::Write;
 use std::convert::TryInto;
 use std::fmt::Debug;
 
-use num::Zero;
-
-pub trait SgnToUns {
-    type UnsignedType;
-
-    fn to_uns(&self) -> Result<Self::UnsignedType,()>;
-}
-
-impl SgnToUns for i32 {
-    type UnsignedType = u32;
-
-    fn to_uns(&self) -> Result<Self::UnsignedType,()> {
-        if *self < i32::zero() {
-            return Err(()); // Should print out value that failed to convert
-        }
-        unsafe {
-            Ok(std::mem::transmute::<i32, Self::UnsignedType>(*self))
-        }
-    }
-}
-
 pub fn write_uns_int<T>(
     n: T,
     bw: &mut impl Write
@@ -81,13 +60,13 @@ mod tests {
     fn write_2(){
         let mut bw = Vec::<u8>::new();
         let signed_int: i32 = 4000;
-        let result = write_uns_int(signed_int.to_uns().unwrap(),&mut bw);
+        let result = write_uns_int(u32::try_from(signed_int).unwrap(),&mut bw);
         assert!(result.is_ok());
     }
 
     #[test]
     fn write_3(){
         let signed_int_neg: i32 = -4000;
-        assert!(signed_int_neg.to_uns().is_err());
+        assert!(u32::try_from(signed_int_neg).is_err());
     }
 }
