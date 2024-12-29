@@ -1,5 +1,6 @@
 use std::io::Write;
 use std::convert::TryInto;
+use std::convert::TryFrom;
 use std::fmt::Debug;
 
 pub fn write_uns_int<T>(
@@ -44,6 +45,36 @@ pub fn write_uns_int<T>(
 }
 
 
+
+
+trait ToUnsigned {
+    type UnsignedType;
+    
+    fn to_uns(&self) -> Self::UnsignedType
+        where Self::UnsignedType: TryFrom<Self>,
+        Self: Sized + Copy,
+        <Self::UnsignedType as TryFrom<Self>>::Error: Debug
+    {
+        Self::UnsignedType::try_from(*self).unwrap()
+    }
+}
+
+impl ToUnsigned for i8 {
+    type UnsignedType = u8;
+}
+
+impl ToUnsigned for i16 {
+    type UnsignedType = u16;
+}
+
+impl ToUnsigned for i32 {
+    type UnsignedType = u32;
+}
+
+impl ToUnsigned for i64 {
+    type UnsignedType = u64;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,5 +99,13 @@ mod tests {
     fn write_3(){
         let signed_int_neg: i32 = -4000;
         assert!(u32::try_from(signed_int_neg).is_err());
+    }
+
+    #[test]
+    fn write_sau(){
+        assert_eq!(5_i8.to_uns(),5_u8);
+        assert_eq!(5_i16.to_uns(),5_u16);
+        assert_eq!(5_i32.to_uns(),5_u32);
+        assert_eq!(5_i64.to_uns(),5_u64);
     }
 }

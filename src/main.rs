@@ -5,8 +5,6 @@ use std::io::BufWriter;
 
 
 
-use std::fmt::Debug;
-
 mod oasis_bytes;
 use oasis_bytes::OasisBytes;
 mod record_type;
