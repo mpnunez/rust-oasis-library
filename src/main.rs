@@ -10,7 +10,7 @@ use oasis_bytes::OasisBytes;
 mod record_type;
 use record_type::RecordType;
 mod write_bytes;
-use write_bytes::write_uns_int;
+use write_bytes::WriteToOasis;
 
 
 fn read_oasis_file(fname: &str) -> std::io::Result<()> {
@@ -30,8 +30,8 @@ fn main() -> std::io::Result<()> {
     let mut bw = BufWriter::new(f);
 
     bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
-    write_uns_int(RecordType::START,&mut bw)?;
-    write_uns_int(RecordType::END,&mut bw)?;
+    RecordType::START.write_into(&mut bw)?;
+    RecordType::END.write_into(&mut bw)?;
     bw.flush()?;
 
     read_oasis_file("test.oas")?;
