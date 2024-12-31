@@ -2,6 +2,7 @@ use std::io::Write;
 use std::convert::TryInto;
 use std::convert::TryFrom;
 use std::fmt::Debug;
+use std::io::{Error, ErrorKind};
 
 trait ToUnsigned {
     type UnsignedType;
@@ -33,17 +34,14 @@ impl RealNumberType {
     pub const DOUBLE_FLOT: u8 = 7;
 }
 
-/**
- A b-string (“binary string”) is a string which may contain any
-combination of 8-bit character codes in any sequence. An a-string (“ASCII string”) may contain only printable
-ASCII character codes (hexadecimal 21-7E) plus the SP (space) character (hexadecimal 20), in any sequence. An
-n-string (“name string”) may contain only printable ASCII character codes (hexadecimal 21-7E), and must have a
-length greater than zero.
-RAW: Write the bytes blindly
-*/
-pub enum StringType {A,B,N,RAW}
+
+pub enum StringType {B,A,N}
+
+
 
 pub trait WriteOasis {
+
+    // define trait to simplify where clause: https://stackoverflow.com/questions/26070559/is-there-any-way-to-create-a-type-alias-for-multiple-traits
     fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<()>
         where T2: num::integer::Integer
         + num::Unsigned
@@ -54,7 +52,7 @@ pub trait WriteOasis {
         , <T2 as TryInto<u8>>::Error: Debug;
     fn write_sgn_int(&mut self, n: i32) -> std::io::Result<()>;
     fn write_f32(&mut self, n: f32) -> std::io::Result<()>;
-    fn write_string(&mut self, s: &str) -> std::io::Result<()>;
+    fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<()>;
 }
 
 // https://stackoverflow.com/questions/29256519/i-implemented-a-trait-for-another-trait-but-cannot-call-methods-from-both-traits
@@ -104,7 +102,46 @@ where T: Write
         self.write_all(&bytes)
     }
     fn write_sgn_int(&mut self, n: i32) -> std::io::Result<()>{Ok(())}
-    fn write_string(&mut self, s: &str) -> std::io::Result<()>{Ok(())}
+
+
+    /**
+    A b-string (“binary string”) is a string which may contain any
+    combination of 8-bit character codes in any sequence. An a-string (“ASCII string”) may contain only printable
+    ASCII character codes (hexadecimal 21-7E) plus the SP (space) character (hexadecimal 20), in any sequence. An
+    n-string (“name string”) may contain only printable ASCII character codes (hexadecimal 21-7E), and must have a
+    length greater than zero.
+    */
+    fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<()>{
+        
+        let str_len = s.len();
+        if matches!(st,StringType::N) && str_len == 0 {
+            return Err(Error::new(ErrorKind::WriteZero, "n-strings cannot be empty."));
+        }
+        self.write_uns_int(str_len);
+
+        if matches!(st,StringType::N) && s.contains(' ') {
+            return Err(Error::new(ErrorKind::InvalidData, "n-strings cannot have spaces."));
+        }
+
+        let s_bytes = s.as_bytes();
+
+        // If A or N check that all characters are printable
+        if matches!(st,StringType::N) || matches!(st,StringType::A) {
+            for c in s_bytes { 
+                if *c >= 0x20 && *c <= 0x7E {continue;}
+                
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "n-strings and a-string can only contain printable ASCII characters."
+                ));
+            }
+                
+        }
+
+        
+
+        self.write_all(s_bytes)
+    }
 }
 
 
@@ -158,6 +195,54 @@ mod tests {
         let num = 8000_f64;
         //let result = num.write_into(&mut bw);
         //assert!(result.is_ok());
+    }
+
+    #[test]
+    fn write_empty_nstr(){
+        let mut bw = Vec::<u8>::new();
+        let s = "";
+        let result = bw.write_string(s,StringType::N);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn write_nstr_with_space(){
+        let mut bw = Vec::<u8>::new();
+        let s = "string with spaces";
+        let result = bw.write_string(s,StringType::N);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn write_nstr_with_nonprintable(){
+        let mut bw = Vec::<u8>::new();
+        let s = "string\nwith\nnon\nprintable";
+        let result = bw.write_string(s,StringType::N);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn write_astr_with_nonprintable(){
+        let mut bw = Vec::<u8>::new();
+        let s = "string\nwith\nnon\nprintable";
+        let result = bw.write_string(s,StringType::A);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn write_nstr(){
+        let mut bw = Vec::<u8>::new();
+        let s = "valid_n_string";
+        let result = bw.write_string(s,StringType::N);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn write_astr(){
+        let mut bw = Vec::<u8>::new();
+        let s = "valid a-string";
+        let result = bw.write_string(s,StringType::A);
+        assert!(result.is_ok());
     }
 
 }

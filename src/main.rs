@@ -44,9 +44,8 @@ fn main() -> std::io::Result<()> {
 
     // Start record
     bw.write_uns_int(RecordType::START)?;
-    bw.write_string(OasisBytes::VERSION_STRING)?;   // StringType::A
-    //bw.write_f32(precision)?;
-
+    bw.write_string(OasisBytes::VERSION_STRING, StringType::A)?;
+    bw.write_f32(precision)?;
 
     // End record
     bw.write_uns_int(RecordType::END)?;
