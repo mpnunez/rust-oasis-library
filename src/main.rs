@@ -52,8 +52,10 @@ fn main() -> std::io::Result<()> {
     bw.write_uns_int(RecordType::END)?;
     let offset_table: [u8;12] = [0;12];
     bw.write_all(&offset_table)?;    // non-strict table offsets
-    const n_bytes_padding: usize = 256 - 13;
-    let validation_pad: [u8;n_bytes_padding] = [RecordType::PAD;n_bytes_padding];
+    let n_bytes_other_end_stuff: usize = 13; // need to calculate based on offset table
+    // and validation
+    let n_bytes_padding: usize = OasisBytes::END_RECORD_LENGTH - n_bytes_other_end_stuff;
+    let validation_pad: Vec<u8> = vec![RecordType::PAD; n_bytes_padding];
     bw.write_string(std::str::from_utf8(&validation_pad).unwrap(), StringType::B)?;
     bw.write_uns_int(OasisBytes::END_RECORD_VALIDATION_NONE)?;
     bw.flush()?;

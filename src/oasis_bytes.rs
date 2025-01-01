@@ -8,6 +8,7 @@ impl OasisBytes {
     pub const TABLE_OFFSETS_IN_START_RECORD: u8 = 0;
     pub const TABLE_OFFSETS_IN_END_RECORD: u8 = 1;
 
+    pub const END_RECORD_LENGTH: usize = 256;
     pub const END_RECORD_VALIDATION_NONE: u8 = 0;
     pub const END_RECORD_VALIDATION_CRC32: u8 = 1;
     pub const END_RECORD_VALIDATION_CHECKSUM32: u8 = 2;
