@@ -46,10 +46,16 @@ fn main() -> std::io::Result<()> {
     bw.write_uns_int(RecordType::START)?;
     bw.write_string(OasisBytes::VERSION_STRING, StringType::A)?;
     bw.write_f32(precision)?;
+    bw.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
 
     // End record
     bw.write_uns_int(RecordType::END)?;
-
+    let offset_table: [u8;12] = [0;12];
+    bw.write_all(&offset_table)?;    // non-strict table offsets
+    const n_bytes_padding: usize = 256 - 13;
+    let validation_pad: [u8;n_bytes_padding] = [RecordType::PAD;n_bytes_padding];
+    bw.write_string(std::str::from_utf8(&validation_pad).unwrap(), StringType::B)?;
+    bw.write_uns_int(OasisBytes::END_RECORD_VALIDATION_NONE)?;
     bw.flush()?;
 
     read_oasis_file("test.oas")?;
