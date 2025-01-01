@@ -48,6 +48,28 @@ fn main() -> std::io::Result<()> {
     bw.write_f32(precision)?;
     bw.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
 
+
+    let mut next_cell_refnum: u64 = 0;
+    
+    bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
+    bw.write_uns_int(next_cell_refnum)?;
+    next_cell_refnum+=1;
+
+    bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
+    bw.write_uns_int(next_cell_refnum)?;
+    next_cell_refnum+=1;
+
+    bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
+    bw.write_uns_int(next_cell_refnum)?;
+    next_cell_refnum+=1;
+
+    bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+    bw.write_string("topcell",StringType::N)?;
+    bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+    bw.write_string("cell2",StringType::N)?;
+    bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+    bw.write_string("cell3",StringType::N)?;
+
     // End record
     bw.write_uns_int(RecordType::END)?;
     let offset_table: [u8;12] = [0;12];

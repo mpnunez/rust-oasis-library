@@ -117,7 +117,7 @@ where T: Write
         if matches!(st,StringType::N) && str_len == 0 {
             return Err(Error::new(ErrorKind::WriteZero, "n-strings cannot be empty."));
         }
-        self.write_uns_int(str_len);
+        self.write_uns_int(str_len)?;
 
         if matches!(st,StringType::N) && s.contains(' ') {
             return Err(Error::new(ErrorKind::InvalidData, "n-strings cannot have spaces."));

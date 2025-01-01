@@ -15,11 +15,11 @@ impl RecordType {
     pub const PROPNAME_STRING_EXPL_REF_NUM: u8 = 8;
     pub const PROPSTRING_IMPL_REF_NUM: u8 = 9;
     pub const PROPSTRING_EXPL_REF_NUM: u8 = 10;
+    pub const LAYERNAME_LAYER: u8 = 11;
+    pub const LAYERNAME_TEXT: u8 = 12;
+    pub const CELL_BY_REFNUM: u8 = 13;
+    pub const CELL_BY_NAME: u8 = 14;
     /*
-    pub const : u8 = 11;
-    pub const : u8 = 12;
-    pub const : u8 = 13;
-    pub const : u8 = 14;
     pub const : u8 = 15;
     pub const : u8 = 16;
     pub const : u8 = 17;
