@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
+use std::mem::size_of;
 
 trait ToUnsigned {
     type UnsignedType;
@@ -42,7 +43,7 @@ pub enum StringType {B,A,N}
 pub trait WriteOasis {
 
     // define trait to simplify where clause: https://stackoverflow.com/questions/26070559/is-there-any-way-to-create-a-type-alias-for-multiple-traits
-    fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<()>
+    fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
         where T2: num::integer::Integer
         + num::Unsigned
         + std::ops::Shl<i32, Output = T2>
@@ -50,16 +51,16 @@ pub trait WriteOasis {
         + Copy
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug;
-    fn write_sgn_int(&mut self, n: i32) -> std::io::Result<()>;
-    fn write_f32(&mut self, n: f32) -> std::io::Result<()>;
-    fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<()>;
+    fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>;
+    fn write_f32(&mut self, n: f32) -> std::io::Result<usize>;
+    fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<usize>;
 }
 
 // https://stackoverflow.com/questions/29256519/i-implemented-a-trait-for-another-trait-but-cannot-call-methods-from-both-traits
 impl<T> WriteOasis for T
 where T: Write
 {
-    fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<()>
+    fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
         where T2: num::integer::Integer
         + num::Unsigned
         + std::ops::Shl<i32, Output = T2>
@@ -73,6 +74,7 @@ where T: Write
         const VALUE_MASK: u8 = !CONTINUE_MASK;
 
         let mut current_value = n;
+        let mut bytes_written: usize = 0;
 
         loop {
             let n_next_value = current_value >> 7;
@@ -85,6 +87,7 @@ where T: Write
                 next_byte = CONTINUE_MASK | next_byte;
             }
             self.write_all(&[next_byte])?;
+            bytes_written +=1;
 
             if n_next_value == T2::zero() {
                 break;
@@ -93,15 +96,17 @@ where T: Write
             }
         }
 
-        Ok(())
+        Ok(bytes_written)
     }
 
-    fn write_f32(&mut self, n: f32) -> std::io::Result<()> {
+    fn write_f32(&mut self, n: f32) -> std::io::Result<usize> {
         self.write_uns_int(RealNumberType::SINGLE_FLOAT)?;
         let bytes = n.to_ne_bytes();
-        self.write_all(&bytes)
+        self.write_all(&bytes)?;
+        Ok(size_of::<f32>())
+        
     }
-    fn write_sgn_int(&mut self, n: i32) -> std::io::Result<()>{Ok(())}
+    fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>{Ok(0)}
 
 
     /**
@@ -111,13 +116,14 @@ where T: Write
     n-string (“name string”) may contain only printable ASCII character codes (hexadecimal 21-7E), and must have a
     length greater than zero.
     */
-    fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<()>{
+    fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<usize>{
         
         let str_len = s.len();
         if matches!(st,StringType::N) && str_len == 0 {
             return Err(Error::new(ErrorKind::WriteZero, "n-strings cannot be empty."));
         }
-        self.write_uns_int(str_len)?;
+        let mut bytes_written: usize = 0;
+        bytes_written += self.write_uns_int(str_len)?;
 
         if matches!(st,StringType::N) && s.contains(' ') {
             return Err(Error::new(ErrorKind::InvalidData, "n-strings cannot have spaces."));
@@ -138,9 +144,9 @@ where T: Write
                 
         }
 
-        
-
-        self.write_all(s_bytes)
+        self.write_all(s_bytes)?;
+        bytes_written += s_bytes.len();
+        Ok(bytes_written)
     }
 }
 
@@ -163,6 +169,7 @@ mod tests {
         let bigger: u32 = 128;
         let result = bw.write_uns_int(bigger);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(),2);
     }
 
     #[test]
@@ -171,6 +178,7 @@ mod tests {
         let bigger = 128_u64;
         let result = bw.write_uns_int(bigger);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(),2);
     }
 
     #[test]
@@ -187,6 +195,7 @@ mod tests {
         let num = 8000_f32;
         let result = bw.write_f32(num);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(),4);
     }
 
     #[test]
