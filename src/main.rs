@@ -48,44 +48,47 @@ fn main() -> std::io::Result<()> {
     }
 
     // Start record
-    bw.write_uns_int(RecordType::START)?;
-    bw.write_string(OasisBytes::VERSION_STRING, StringType::A)?;
-    bw.write_f32(precision)?;
-    bw.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
+    byte_ind += bw.write_uns_int(RecordType::START)?;
+    byte_ind += bw.write_string(OasisBytes::VERSION_STRING, StringType::A)?;
+    byte_ind += bw.write_f32(precision)?;
+    byte_ind += bw.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
 
 
     let mut next_cell_refnum: u64 = 0;
     
-    bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
-    bw.write_uns_int(next_cell_refnum)?;
+    byte_ind += bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
+    byte_ind += bw.write_uns_int(next_cell_refnum)?;
     next_cell_refnum+=1;
 
-    bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
-    bw.write_uns_int(next_cell_refnum)?;
+    byte_ind += bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
+    byte_ind += bw.write_uns_int(next_cell_refnum)?;
     next_cell_refnum+=1;
 
-    bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
-    bw.write_uns_int(next_cell_refnum)?;
+    byte_ind += bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
+    byte_ind += bw.write_uns_int(next_cell_refnum)?;
     next_cell_refnum+=1;
 
-    bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
-    bw.write_string("topcell",StringType::N)?;
-    bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
-    bw.write_string("cell2",StringType::N)?;
-    bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
-    bw.write_string("cell3",StringType::N)?;
+    byte_ind += bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+    byte_ind += bw.write_string("topcell",StringType::N)?;
+    byte_ind += bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+    byte_ind += bw.write_string("cell2",StringType::N)?;
+    byte_ind += bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+    byte_ind += bw.write_string("cell3",StringType::N)?;
 
     // End record
-    bw.write_uns_int(RecordType::END)?;
+    byte_ind += bw.write_uns_int(RecordType::END)?;
     let offset_table: [u8;12] = [0;12];
     bw.write_all(&offset_table)?;    // non-strict table offsets
-    let n_bytes_other_end_stuff: usize = 13; // need to calculate based on offset table
+    byte_ind += 12; // whatever the size of the offset table is
+    let n_bytes_other_end_stuff: usize = 12 + 1 + 1; // offset table + end validation + length of validation pad
     // and validation
     let n_bytes_padding: usize = OasisBytes::END_RECORD_LENGTH - n_bytes_other_end_stuff;
     let validation_pad: Vec<u8> = vec![RecordType::PAD; n_bytes_padding];
-    bw.write_string(std::str::from_utf8(&validation_pad).unwrap(), StringType::B)?;
-    bw.write_uns_int(OasisBytes::END_RECORD_VALIDATION_NONE)?;
+    byte_ind += bw.write_string(std::str::from_utf8(&validation_pad).unwrap(), StringType::B)?;
+    byte_ind += bw.write_uns_int(OasisBytes::END_RECORD_VALIDATION_NONE)?;
     bw.flush()?;
+
+    println!("{} bytes written.", byte_ind);
 
     read_oasis_file("test.oas")?;
 
