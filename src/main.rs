@@ -35,11 +35,16 @@ fn main() -> std::io::Result<()> {
 
     let f = File::create(file_name)?;
     let mut bw = BufWriter::new(f);
+    let mut byte_ind: usize = 0;
     match oasis_type {
-        OasisType::STANDARD =>
-            bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?,
-        OasisType::CURVILINEAR =>
-            bw.write_all(OasisBytes::CURVI_MAGIC_BYTES.as_bytes())?,
+        OasisType::STANDARD => {
+            bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
+            byte_ind += OasisBytes::MAGIC_BYTES.len()
+        }
+        OasisType::CURVILINEAR => {
+            bw.write_all(OasisBytes::CURVI_MAGIC_BYTES.as_bytes())?;
+            byte_ind += OasisBytes::CURVI_MAGIC_BYTES.len()
+        }
     }
 
     // Start record

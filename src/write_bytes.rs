@@ -32,7 +32,7 @@ impl RealNumberType {
     pub const POSITIVE_RATIO: u8 = 4;
     pub const NEGATIVE_RATIO: u8 = 5;
     pub const SINGLE_FLOAT: u8 = 6;
-    pub const DOUBLE_FLOT: u8 = 7;
+    pub const DOUBLE_FLOAT: u8 = 7;
 }
 
 
@@ -53,6 +53,7 @@ pub trait WriteOasis {
         , <T2 as TryInto<u8>>::Error: Debug;
     fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>;
     fn write_f32(&mut self, n: f32) -> std::io::Result<usize>;
+    fn write_f64(&mut self, n: f64) -> std::io::Result<usize>;
     fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<usize>;
 }
 
@@ -104,8 +105,15 @@ where T: Write
         let bytes = n.to_ne_bytes();
         self.write_all(&bytes)?;
         Ok(size_of::<f32>())
-        
     }
+
+    fn write_f64(&mut self, n: f64) -> std::io::Result<usize> {
+        self.write_uns_int(RealNumberType::DOUBLE_FLOAT)?;
+        let bytes = n.to_ne_bytes();
+        self.write_all(&bytes)?;
+        Ok(size_of::<f64>())
+    }
+
     fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>{Ok(0)}
 
 
@@ -244,6 +252,7 @@ mod tests {
         let s = "valid_n_string";
         let result = bw.write_string(s,StringType::N);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(),1+s.len());
     }
 
     #[test]
@@ -252,6 +261,7 @@ mod tests {
         let s = "valid a-string";
         let result = bw.write_string(s,StringType::A);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(),1+s.len());
     }
 
 }
