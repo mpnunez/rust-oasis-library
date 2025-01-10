@@ -3,7 +3,6 @@ use std::convert::TryInto;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
-use std::mem::size_of;
 
 trait ToUnsigned {
     type UnsignedType;
@@ -101,17 +100,19 @@ where T: Write
     }
 
     fn write_f32(&mut self, n: f32) -> std::io::Result<usize> {
-        self.write_uns_int(RealNumberType::SINGLE_FLOAT)?;
+        let mut bytes_written = self.write_uns_int(RealNumberType::SINGLE_FLOAT)?;
         let bytes = n.to_ne_bytes();
         self.write_all(&bytes)?;
-        Ok(size_of::<f32>())
+        bytes_written += bytes.len();
+        Ok(bytes_written)
     }
 
     fn write_f64(&mut self, n: f64) -> std::io::Result<usize> {
-        self.write_uns_int(RealNumberType::DOUBLE_FLOAT)?;
+        let mut bytes_written = self.write_uns_int(RealNumberType::DOUBLE_FLOAT)?;
         let bytes = n.to_ne_bytes();
         self.write_all(&bytes)?;
-        Ok(size_of::<f64>())
+        bytes_written += bytes.len();
+        Ok(bytes_written)
     }
 
     fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>{Ok(0)}
