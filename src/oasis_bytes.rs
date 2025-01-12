@@ -1,3 +1,8 @@
+pub enum OasisType {
+    STANDARD,
+    CURVILINEAR,
+}
+
 pub struct OasisBytes {}
 
 impl OasisBytes {

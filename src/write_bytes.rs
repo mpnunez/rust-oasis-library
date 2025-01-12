@@ -4,6 +4,9 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 
+use crate::oasis_bytes::{OasisType, OasisBytes};
+use crate::record_type::RecordType;
+
 trait ToUnsigned {
     type UnsignedType;
     
@@ -54,6 +57,10 @@ pub trait WriteOasis {
     fn write_f32(&mut self, n: f32) -> std::io::Result<usize>;
     fn write_f64(&mut self, n: f64) -> std::io::Result<usize>;
     fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<usize>;
+
+    // Write records
+    fn write_magic_bytes(&mut self, oasis_type: &OasisType) -> std::io::Result<usize>;
+    fn write_start_record(&mut self, precision: &f32) -> std::io::Result<usize>;
 }
 
 // https://stackoverflow.com/questions/29256519/i-implemented-a-trait-for-another-trait-but-cannot-call-methods-from-both-traits
@@ -156,6 +163,39 @@ where T: Write
         self.write_all(s_bytes)?;
         bytes_written += s_bytes.len();
         Ok(bytes_written)
+    }
+
+    fn write_magic_bytes(
+        &mut self,
+        oasis_type: &OasisType
+    ) -> std::io::Result<usize>{
+
+        match oasis_type {
+            OasisType::STANDARD => {
+                self.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
+                Ok(OasisBytes::MAGIC_BYTES.len())
+            }
+            OasisType::CURVILINEAR => {
+                self.write_all(OasisBytes::CURVI_MAGIC_BYTES.as_bytes())?;
+                Ok(OasisBytes::CURVI_MAGIC_BYTES.len())
+            }
+        }
+    }
+
+    fn write_start_record(
+        &mut self,
+        precision: &f32
+    ) -> std::io::Result<usize>{
+
+        let mut byte_ind: usize = 0;
+
+        // Start record
+        byte_ind += self.write_uns_int(RecordType::START)?;
+        byte_ind += self.write_string(OasisBytes::VERSION_STRING, StringType::A)?;
+        byte_ind += self.write_f32(*precision)?;
+        byte_ind += self.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
+
+        Ok(byte_ind)
     }
 }
 

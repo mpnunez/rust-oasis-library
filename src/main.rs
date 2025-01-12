@@ -3,13 +3,12 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 
-
-
 mod oasis_bytes;
-use oasis_bytes::OasisBytes;
 mod record_type;
-use record_type::RecordType;
 mod write_bytes;
+
+use oasis_bytes::{OasisType,OasisBytes};
+use record_type::RecordType;
 use write_bytes::{WriteOasis,StringType};
 
 
@@ -22,10 +21,9 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-enum OasisType {
-    STANDARD,
-    CURVILINEAR,
-}
+
+
+
 
 fn main() -> std::io::Result<()> {
 
@@ -36,23 +34,9 @@ fn main() -> std::io::Result<()> {
     let f = File::create(file_name)?;
     let mut bw = BufWriter::new(f);
     let mut byte_ind: usize = 0;
-    match oasis_type {
-        OasisType::STANDARD => {
-            bw.write_all(OasisBytes::MAGIC_BYTES.as_bytes())?;
-            byte_ind += OasisBytes::MAGIC_BYTES.len()
-        }
-        OasisType::CURVILINEAR => {
-            bw.write_all(OasisBytes::CURVI_MAGIC_BYTES.as_bytes())?;
-            byte_ind += OasisBytes::CURVI_MAGIC_BYTES.len()
-        }
-    }
 
-    // Start record
-    byte_ind += bw.write_uns_int(RecordType::START)?;
-    byte_ind += bw.write_string(OasisBytes::VERSION_STRING, StringType::A)?;
-    byte_ind += bw.write_f32(precision)?;
-    byte_ind += bw.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
-
+    byte_ind += bw.write_magic_bytes(&oasis_type)?;
+    byte_ind += bw.write_start_record(&precision)?;
     
     let mut next_cell_refnum: u64 = 0;
     
@@ -68,6 +52,7 @@ fn main() -> std::io::Result<()> {
     byte_ind += bw.write_uns_int(next_cell_refnum)?;
     next_cell_refnum+=1;
 
+    let cellname_table_offset = byte_ind;
     byte_ind += bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
     byte_ind += bw.write_string("topcell",StringType::N)?;
     byte_ind += bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
