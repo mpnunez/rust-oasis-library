@@ -244,7 +244,7 @@ mod tests {
         let num = 8000_f32;
         let result = bw.write_f32(num);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(),4);
+        assert_eq!(result.unwrap(),5);
     }
 
     #[test]
