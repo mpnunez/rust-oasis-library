@@ -21,9 +21,21 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
     Ok(())
 }
 
+trait PointTrait {}
 
+struct Point {
+    x: i64,
+    y: i64,
+}
 
+impl PointTrait for Point {
 
+}
+
+struct Rectangle<PointType: PointTrait> {
+    pt1: PointType,
+    pt2: PointType,
+}
 
 fn main() -> std::io::Result<()> {
 
@@ -43,6 +55,8 @@ fn main() -> std::io::Result<()> {
     byte_ind += bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
     byte_ind += bw.write_uns_int(next_cell_refnum)?;
     next_cell_refnum+=1;
+
+    // write a rectangle
 
     byte_ind += bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
     byte_ind += bw.write_uns_int(next_cell_refnum)?;
