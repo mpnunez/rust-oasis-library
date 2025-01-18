@@ -6,6 +6,7 @@ use std::io::BufWriter;
 mod oasis_bytes;
 mod record_type;
 mod write_bytes;
+mod geometry;
 
 use oasis_bytes::{OasisType,OasisBytes};
 use record_type::RecordType;
@@ -21,21 +22,7 @@ fn read_oasis_file(fname: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-trait PointTrait {}
 
-struct Point {
-    x: i64,
-    y: i64,
-}
-
-impl PointTrait for Point {
-
-}
-
-struct Rectangle<PointType: PointTrait> {
-    pt1: PointType,
-    pt2: PointType,
-}
 
 fn main() -> std::io::Result<()> {
 
