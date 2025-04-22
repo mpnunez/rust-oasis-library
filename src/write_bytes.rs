@@ -27,7 +27,7 @@ pub enum StringType {B,A,N}
 
 
 
-pub trait WriteOasis {
+pub trait WriteOasis: Write {
 
     // define trait to simplify where clause: https://stackoverflow.com/questions/26070559/is-there-any-way-to-create-a-type-alias-for-multiple-traits
     fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
@@ -45,6 +45,9 @@ pub trait WriteOasis {
     // Write records
     fn write_magic_bytes(&mut self, oasis_type: &OasisType) -> std::io::Result<usize>;
     fn write_start_record(&mut self, precision: &f32) -> std::io::Result<usize>;
+    fn write_info_byte(&mut self,
+        b7: bool, b6: bool, b5: bool, b4: bool,
+        b3: bool, b2: bool, b1: bool, b0: bool) -> std::io::Result<usize>;
 }
 
 // https://stackoverflow.com/questions/29256519/i-implemented-a-trait-for-another-trait-but-cannot-call-methods-from-both-traits
@@ -205,6 +208,23 @@ impl<T: Write> WriteOasis for T
         byte_ind += self.write_uns_int(OasisBytes::TABLE_OFFSETS_IN_END_RECORD)?;
 
         Ok(byte_ind)
+    }
+
+    fn write_info_byte(&mut self,
+        b7: bool, b6: bool, b5: bool, b4: bool,
+        b3: bool, b2: bool, b1: bool, b0: bool) -> std::io::Result<usize> {
+        let mut next_byte = 0;
+        if b7 {next_byte = next_byte | 1_u8 << 7;}
+        if b6 {next_byte = next_byte | 1_u8 << 6;}
+        if b5 {next_byte = next_byte | 1_u8 << 5;}
+        if b4 {next_byte = next_byte | 1_u8 << 4;}
+        if b3 {next_byte = next_byte | 1_u8 << 3;}
+        if b2 {next_byte = next_byte | 1_u8 << 2;}
+        if b1 {next_byte = next_byte | 1_u8 << 1;}
+        if b0 {next_byte = next_byte | 1_u8 << 0;}
+        self.write_all(&[next_byte])?;
+
+        return Ok(1);
     }
 }
 

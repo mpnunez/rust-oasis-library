@@ -44,6 +44,16 @@ fn main() -> std::io::Result<()> {
     next_cell_refnum+=1;
 
     // write a rectangle
+    byte_ind += bw.write_uns_int(RecordType::RECTANGLE)?;
+    byte_ind += bw.write_info_byte( // SWHXYRDL
+        false, true, true, true, true, false, true, true
+    )?;
+    byte_ind += bw.write_uns_int(1)?;
+    byte_ind += bw.write_uns_int(0)?;
+    byte_ind += bw.write_uns_int(100)?;
+    byte_ind += bw.write_uns_int(200)?;
+    byte_ind += bw.write_sgn_int(0)?;
+    byte_ind += bw.write_sgn_int(0)?;
 
     byte_ind += bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
     byte_ind += bw.write_uns_int(next_cell_refnum)?;
