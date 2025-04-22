@@ -4,6 +4,8 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 
+use num_traits::PrimInt;
+
 use crate::oasis_bytes::{OasisType, OasisBytes};
 use crate::record_type::RecordType;
 
@@ -46,11 +48,7 @@ pub trait WriteOasis {
 
     // define trait to simplify where clause: https://stackoverflow.com/questions/26070559/is-there-any-way-to-create-a-type-alias-for-multiple-traits
     fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
-        where T2: num::integer::Integer
-        + num::Unsigned
-        + std::ops::Shl<i32, Output = T2>
-        + std::ops::Shr<i32, Output = T2>
-        + Copy
+        where T2: PrimInt
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug;
     fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>;
@@ -68,11 +66,7 @@ impl<T> WriteOasis for T
 where T: Write
 {
     fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
-        where T2: num::integer::Integer
-        + num::Unsigned
-        + std::ops::Shl<i32, Output = T2>
-        + std::ops::Shr<i32, Output = T2>
-        + Copy
+        where T2: PrimInt
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug
     {
