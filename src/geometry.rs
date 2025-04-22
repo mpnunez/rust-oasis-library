@@ -14,13 +14,14 @@ trait RectangleTrait {
     fn lly(&self) -> Self::CoordinateType;
 }
 
-struct Point {
-    x: i64,
-    y: i64,
+struct Point<Ct> {
+    x: Ct,
+    y: Ct,
 }
 
-impl PointTrait for Point {
-    type CoordinateType = i64;
+
+impl<Ct: std::marker::Copy> PointTrait for Point<Ct> {
+    type CoordinateType = Ct;
     fn x(&self) -> Self::CoordinateType {self.x}
     fn y(&self) -> Self::CoordinateType {self.y}
     fn set_x(&mut self, x: Self::CoordinateType) -> () {self.x = x}
@@ -34,7 +35,8 @@ struct Rectangle<PointType: PointTrait> {
     pt2: PointType,
 }
 
-impl<PointType: geometry::PointTrait> RectangleTrait for Rectangle<PointType impl geometry::PointTrait> {
+/*
+impl<PointType: geometry::PointTrait> RectangleTrait for Rectangle<PointType: geometry::PointTrait> {
     type CoordinateType = PointType::CoordinateType;
     fn length(&self) -> Self::CoordinateType {
         return 0;
@@ -49,6 +51,7 @@ impl<PointType: geometry::PointTrait> RectangleTrait for Rectangle<PointType imp
         return 0;
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
