@@ -1,3 +1,5 @@
+use num_traits::PrimInt;
+
 trait PointTrait {
     type CoordinateType;
     fn x(&self) -> Self::CoordinateType;
@@ -14,13 +16,13 @@ trait RectangleTrait {
     fn lly(&self) -> Self::CoordinateType;
 }
 
-struct Point<Ct> {
+struct Point<Ct: PrimInt> {
     x: Ct,
     y: Ct,
 }
 
 
-impl<Ct: std::marker::Copy> PointTrait for Point<Ct> {
+impl<Ct: PrimInt> PointTrait for Point<Ct> {
     type CoordinateType = Ct;
     fn x(&self) -> Self::CoordinateType {self.x}
     fn y(&self) -> Self::CoordinateType {self.y}
@@ -35,23 +37,23 @@ struct Rectangle<PointType: PointTrait> {
     pt2: PointType,
 }
 
-/*
-impl<PointType: geometry::PointTrait> RectangleTrait for Rectangle<PointType: geometry::PointTrait> {
+
+impl<PointType: PointTrait<CoordinateType: PrimInt>> RectangleTrait for Rectangle<PointType> {
     type CoordinateType = PointType::CoordinateType;
     fn length(&self) -> Self::CoordinateType {
-        return 0;
+        return self.pt2.x() - self.pt1.x();
     }
     fn width(&self) -> Self::CoordinateType {
-        return 0;
+        return self.pt2.y() - self.pt1.y();
     }
     fn llx(&self) -> Self::CoordinateType {
-        return 0;
+        return self.pt1.x();
     }
     fn lly(&self) -> Self::CoordinateType {
-        return 0;
+        return self.pt1.y();
     }
 }
-*/
+
 
 #[cfg(test)]
 mod tests {
