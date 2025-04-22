@@ -1,6 +1,5 @@
 use std::io::Write;
 use std::convert::TryInto;
-use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 
@@ -9,22 +8,6 @@ use num_traits::PrimInt;
 use crate::oasis_bytes::{OasisType, OasisBytes};
 use crate::record_type::RecordType;
 
-trait ToUnsigned {
-    type UnsignedType;
-    
-    fn to_uns(&self) -> Self::UnsignedType
-        where Self::UnsignedType: TryFrom<Self>,
-        Self: Sized + Copy,
-        <Self::UnsignedType as TryFrom<Self>>::Error: Debug
-    {
-        Self::UnsignedType::try_from(*self).unwrap()    // TODO return optional or result
-    }
-}
-
-impl ToUnsigned for i8 {type UnsignedType = u8;}
-impl ToUnsigned for i16 {type UnsignedType = u16;}
-impl ToUnsigned for i32 {type UnsignedType = u32;}
-impl ToUnsigned for i64 {type UnsignedType = u64;}
 
 struct RealNumberType {}
 
@@ -51,7 +34,10 @@ pub trait WriteOasis {
         where T2: PrimInt
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug;
-    fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>;
+    fn write_sgn_int<T2: PrimInt>(&mut self, n: T2) -> std::io::Result<usize>
+        where T2: PrimInt
+        + TryInto<u8>
+        , <T2 as TryInto<u8>>::Error: Debug;
     fn write_f32(&mut self, n: f32) -> std::io::Result<usize>;
     fn write_f64(&mut self, n: f64) -> std::io::Result<usize>;
     fn write_string(&mut self, s: &str, st: StringType) -> std::io::Result<usize>;
@@ -62,15 +48,13 @@ pub trait WriteOasis {
 }
 
 // https://stackoverflow.com/questions/29256519/i-implemented-a-trait-for-another-trait-but-cannot-call-methods-from-both-traits
-impl<T> WriteOasis for T
-where T: Write
+impl<T: Write> WriteOasis for T
 {
     fn write_uns_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
         where T2: PrimInt
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug
     {
-        
         const CONTINUE_MASK: u8 = 1 << 7;
         const VALUE_MASK: u8 = !CONTINUE_MASK;
 
@@ -100,6 +84,40 @@ where T: Write
         Ok(bytes_written)
     }
 
+    fn write_sgn_int<T2: PrimInt>(&mut self, n: T2) -> std::io::Result<usize>
+        where T2: PrimInt
+            + TryInto<u8>
+            , <T2 as TryInto<u8>>::Error: Debug{
+        const CONTINUE_MASK: u8 = 1 << 7;
+        let is_negative: bool = n < T2::zero();
+        const SIGN_MASK: u8 = 1;
+        const VALUE_MASK: u8 = !(CONTINUE_MASK | SIGN_MASK);
+
+        let mut current_value = n;
+        if is_negative {
+            current_value = (current_value << 1) >> 1;
+        }
+
+        let n_next_value = current_value >> 6;
+        let n_u8_value = current_value - (n_next_value << 6);
+        let n_u8_value_u8: u8 = n_u8_value.try_into()
+            .expect("Value does not fit into u8");
+
+        let mut next_byte =  (n_u8_value_u8 << 1) & VALUE_MASK;
+        if n_next_value > T2::zero() {
+            next_byte = CONTINUE_MASK | next_byte;
+        }
+        if is_negative {
+            next_byte = SIGN_MASK | next_byte;
+        }
+        self.write_all(&[next_byte])?;
+
+        if n_next_value == T2::zero() {
+            return Ok(1);
+        }
+        Ok(1_usize + self.write_uns_int(n_next_value)?)
+    }
+
     fn write_f32(&mut self, n: f32) -> std::io::Result<usize> {
         let mut bytes_written = self.write_uns_int(RealNumberType::SINGLE_FLOAT)?;
         let bytes = n.to_ne_bytes();
@@ -115,9 +133,6 @@ where T: Write
         bytes_written += bytes.len();
         Ok(bytes_written)
     }
-
-    fn write_sgn_int(&mut self, n: i32) -> std::io::Result<usize>{Ok(0)}
-
 
     /**
     A b-string (“binary string”) is a string which may contain any
@@ -229,6 +244,22 @@ mod tests {
         let mut bw = Vec::<u8>::new();
         let signed_int = 4000_i32;
         let result = bw.write_uns_int(signed_int.to_uns());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn write_sgn_as_uns_no_convert(){
+        let mut bw = Vec::<u8>::new();
+        let signed_int = 4000_i32;
+        let result = bw.write_uns_int(signed_int);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn write_uns_int(){
+        let mut bw = Vec::<u8>::new();
+        let signed_int = 4000_i32;
+        let result = bw.write_sgn_int(signed_int);
         assert!(result.is_ok());
     }
 
