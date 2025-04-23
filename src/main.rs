@@ -29,6 +29,7 @@ struct OasisRecordWriter<Wot: WriteOasis> {
     oasis_type: OasisType,
     byte_ind: usize,
     next_cell_refnum: u64,
+    cellname_table_offset: Option<usize>,
 }
 
 impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
@@ -40,6 +41,7 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
             oasis_type: OasisType::STANDARD,
             byte_ind: 0,
             next_cell_refnum: 0,
+            cellname_table_offset: None,
         }
     }
 
@@ -78,7 +80,7 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
     }
 
     fn write_cell_names(&mut self) -> std::io::Result<()> {
-        cellname_table_offset = self.byte_ind;  // TODO: write this in offset table
+        self.cellname_table_offset = Some(self.byte_ind);  // TODO: write this in offset table
         self.byte_ind += self.bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
         self.byte_ind += self.bw.write_string("topcell",StringType::N)?;
         self.byte_ind += self.bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
