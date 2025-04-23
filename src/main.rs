@@ -30,6 +30,7 @@ struct OasisRecordWriter<Wot: WriteOasis> {
     byte_ind: usize,
     next_cell_refnum: u64,
     cellname_table_offset: Option<usize>,
+    cell_names: Vec::<String>,
 }
 
 impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
@@ -42,6 +43,7 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
             byte_ind: 0,
             next_cell_refnum: 0,
             cellname_table_offset: None,
+            cell_names: Vec::<String>::new(),
         }
     }
 
@@ -55,7 +57,7 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
         self.byte_ind += self.bw.write_uns_int(RecordType::CELL_BY_REFNUM)?;
         self.byte_ind += self.bw.write_uns_int(self.next_cell_refnum)?;
         self.next_cell_refnum+=1;
-        // Need to store the cell name
+        self.cell_names.push(name.to_string());
         Ok(())
     }
 
@@ -81,12 +83,10 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
 
     fn write_cell_names(&mut self) -> std::io::Result<()> {
         self.cellname_table_offset = Some(self.byte_ind);  // TODO: write this in offset table
-        self.byte_ind += self.bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
-        self.byte_ind += self.bw.write_string("topcell",StringType::N)?;
-        self.byte_ind += self.bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
-        self.byte_ind += self.bw.write_string("cell2",StringType::N)?;
-        self.byte_ind += self.bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
-        self.byte_ind += self.bw.write_string("cell3",StringType::N)?;
+        for cn in self.cell_names.iter() {
+            self.byte_ind += self.bw.write_uns_int(RecordType::CELLNAME_IMPL_REF_NUM)?;
+            self.byte_ind += self.bw.write_string(&cn, StringType::N)?;
+        }
         Ok(())
     }
 
