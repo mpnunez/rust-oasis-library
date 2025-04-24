@@ -132,14 +132,14 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
     }
 
     fn write_end_record(&mut self) -> std::io::Result<()> {
-        self.byte_ind += self.bw.write_uns_int(RecordType::END)?;
+        let end_marker_size = self.bw.write_uns_int(RecordType::END)?;
+        self.byte_ind += end_marker_size;
         let byte_ind_before_offset_table = self.byte_ind;
         self.write_offset_table()?;
         let offset_table_size = self.byte_ind - byte_ind_before_offset_table;
-        const END_RECORD_MARKER_SIZE: usize = 1;
         const END_RECORD_VALIDATION_NONE_SIZE: usize = 1;
         let n_bytes_other_end_stuff: usize =
-            END_RECORD_MARKER_SIZE
+            end_marker_size
             + offset_table_size
             + END_RECORD_VALIDATION_NONE_SIZE;
         let n_bytes_padding: usize = OasisBytes::END_RECORD_LENGTH - n_bytes_other_end_stuff;
