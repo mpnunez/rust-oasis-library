@@ -59,6 +59,11 @@ impl<T: Write> WriteOasis for T
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug
     {
+        if n < T2::zero() {
+            return Err(Error::new(ErrorKind::InvalidData,
+                "Negative integer cannot be written as unsigned."));
+        }
+
         const CONTINUE_MASK: u8 = 1 << 7;
         const VALUE_MASK: u8 = !CONTINUE_MASK;
 
