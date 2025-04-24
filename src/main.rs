@@ -2,6 +2,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
+use std::convert::TryFrom;
 
 mod oasis_bytes;
 mod record_type;
@@ -29,8 +30,14 @@ struct OasisRecordWriter<Wot: WriteOasis> {
     oasis_type: OasisType,
     byte_ind: usize,
     next_cell_refnum: u64,
-    cellname_table_offset: Option<usize>,
     cell_names: Vec::<String>,
+
+    cellname_table_offset: Option<usize>,
+    textstring_table_offset: Option<usize>,
+    propname_table_offset: Option<usize>,
+    propstring_table_offset: Option<usize>,
+    layername_table_offset: Option<usize>,
+    xname_table_offset: Option<usize>,
 }
 
 impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
@@ -42,8 +49,15 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
             oasis_type: OasisType::STANDARD,
             byte_ind: 0,
             next_cell_refnum: 0,
-            cellname_table_offset: None,
+            
             cell_names: Vec::<String>::new(),
+
+            cellname_table_offset: None,
+            textstring_table_offset: None,
+            propname_table_offset: None,
+            propstring_table_offset: None,
+            layername_table_offset: None,
+            xname_table_offset: None,
         }
     }
 
@@ -90,14 +104,45 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
         Ok(())
     }
 
+
+
+    fn write_offset_table_row(&mut self, value: &Option<usize>) -> std::io::Result<()> {
+        match value {
+            None => {
+                self.byte_ind += self.bw.write_uns_int(0)?;
+                self.byte_ind += self.bw.write_uns_int(0)?;
+            },
+            Some(table_byte_ind) => {
+                self.byte_ind += self.bw.write_uns_int(1)?;
+                let bar = u64::try_from(*table_byte_ind).unwrap();
+                self.byte_ind += self.bw.write_uns_int(bar)?;
+            },
+        }
+        Ok(())
+    }
+
+    fn write_offset_table(&mut self) -> std::io::Result<()> {
+        self.write_offset_table_row(&self.cellname_table_offset.clone())?;
+        self.write_offset_table_row(&self.textstring_table_offset.clone())?;
+        self.write_offset_table_row(&self.propname_table_offset.clone())?;
+        self.write_offset_table_row(&self.propstring_table_offset.clone())?;
+        self.write_offset_table_row(&self.layername_table_offset.clone())?;
+        self.write_offset_table_row(&self.xname_table_offset.clone())?;
+        Ok(())
+    }
+
     fn write_end_record(&mut self) -> std::io::Result<()> {
         // End record
         self.byte_ind += self.bw.write_uns_int(RecordType::END)?;
-        let offset_table: [u8;12] = [0;12];
-        self.bw.write_all(&offset_table)?;    // non-strict table offsets
-        self.byte_ind += 12; // whatever the size of the offset table is
-        let n_bytes_other_end_stuff: usize = 12 + 1 + 1; // offset table + end validation + length of validation pad
-        // and validation
+        let byte_ind_before_offset_table = self.byte_ind;
+        self.write_offset_table()?;
+        let offset_table_size = self.byte_ind - byte_ind_before_offset_table;
+        const END_RECORD_MARKER_SIZE: usize = 1;
+        const END_RECORD_VALIDATION_NONE_SIZE: usize = 1;
+        let n_bytes_other_end_stuff: usize =
+            END_RECORD_MARKER_SIZE
+            + offset_table_size
+            + END_RECORD_VALIDATION_NONE_SIZE;
         let n_bytes_padding: usize = OasisBytes::END_RECORD_LENGTH - n_bytes_other_end_stuff;
         let validation_pad: Vec<u8> = vec![RecordType::PAD; n_bytes_padding];
         self.byte_ind += self.bw.write_string(std::str::from_utf8(&validation_pad).unwrap(), StringType::B)?;
@@ -112,7 +157,7 @@ fn main() -> std::io::Result<()> {
 
     let file_name = "test.oas";
     let f = File::create(file_name)?;
-    let mut bw = BufWriter::new(f);
+    let bw = BufWriter::new(f);
 
     let mut orw = OasisRecordWriter::new(bw, 8000_f32);
     orw.initialize_file()?;
