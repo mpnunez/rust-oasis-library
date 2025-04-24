@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 use std::io::{Error, ErrorKind};
 
-use num_traits::PrimInt;
+use num_traits::{PrimInt,Signed};
 
 use crate::oasis_bytes::{OasisType, OasisBytes};
 use crate::record_type::RecordType;
@@ -34,8 +34,9 @@ pub trait WriteOasis: Write {
         where T2: PrimInt
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug;
-    fn write_sgn_int<T2: PrimInt>(&mut self, n: T2) -> std::io::Result<usize>
+    fn write_sgn_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
         where T2: PrimInt
+        + Signed
         + TryInto<u8>
         , <T2 as TryInto<u8>>::Error: Debug;
     fn write_f32(&mut self, n: f32) -> std::io::Result<usize>;
@@ -87,8 +88,9 @@ impl<T: Write> WriteOasis for T
         Ok(bytes_written)
     }
 
-    fn write_sgn_int<T2: PrimInt>(&mut self, n: T2) -> std::io::Result<usize>
+    fn write_sgn_int<T2>(&mut self, n: T2) -> std::io::Result<usize>
         where T2: PrimInt
+            + Signed
             + TryInto<u8>
             , <T2 as TryInto<u8>>::Error: Debug{
         const CONTINUE_MASK: u8 = 1 << 7;
@@ -97,9 +99,7 @@ impl<T: Write> WriteOasis for T
         const VALUE_MASK: u8 = !(CONTINUE_MASK | SIGN_MASK);
 
         let mut current_value = n;
-        if is_negative {
-            current_value = (current_value << 1) >> 1;
-        }
+        current_value = n.abs();
 
         let n_next_value = current_value >> 6;
         let n_u8_value = current_value - (n_next_value << 6);

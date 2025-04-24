@@ -132,7 +132,6 @@ impl <Wot: WriteOasis> OasisRecordWriter<Wot> {
     }
 
     fn write_end_record(&mut self) -> std::io::Result<()> {
-        // End record
         self.byte_ind += self.bw.write_uns_int(RecordType::END)?;
         let byte_ind_before_offset_table = self.byte_ind;
         self.write_offset_table()?;
