@@ -1,4 +1,6 @@
-use num_traits::PrimInt;
+use std::cmp;
+
+use num_traits::{PrimInt,Signed};
 
 trait PointTrait {
     type CoordinateType;
@@ -16,13 +18,13 @@ trait RectangleTrait {
     fn lly(&self) -> Self::CoordinateType;
 }
 
-struct Point<Ct: PrimInt> {
+struct Point<Ct: PrimInt + Signed> {
     x: Ct,
     y: Ct,
 }
 
 
-impl<Ct: PrimInt> PointTrait for Point<Ct> {
+impl<Ct: PrimInt + Signed> PointTrait for Point<Ct> {
     type CoordinateType = Ct;
     fn x(&self) -> Self::CoordinateType {self.x}
     fn y(&self) -> Self::CoordinateType {self.y}
@@ -38,19 +40,19 @@ struct Rectangle<PointType: PointTrait> {
 }
 
 
-impl<PointType: PointTrait<CoordinateType: PrimInt>> RectangleTrait for Rectangle<PointType> {
+impl<PointType: PointTrait<CoordinateType: PrimInt + Signed>> RectangleTrait for Rectangle<PointType> {
     type CoordinateType = PointType::CoordinateType;
     fn length(&self) -> Self::CoordinateType {
-        return self.pt2.x() - self.pt1.x();
+        return (self.pt2.x() - self.pt1.x()).abs();
     }
     fn width(&self) -> Self::CoordinateType {
-        return self.pt2.y() - self.pt1.y();
+        return (self.pt2.y() - self.pt1.y()).abs();
     }
     fn llx(&self) -> Self::CoordinateType {
-        return self.pt1.x();
+        return cmp::min(self.pt1.x(), self.pt2.x());
     }
     fn lly(&self) -> Self::CoordinateType {
-        return self.pt1.y();
+        return cmp::min(self.pt1.y(), self.pt2.y());
     }
 }
 
@@ -66,15 +68,15 @@ mod tests {
         assert_eq!(p.y(),5);
     }
 
-    /*
     #[test]
     fn make_rectangle(){
-        let pt1 = Point { x: 0, y: 0 };
+        let pt1 = Point { x: -1, y: -1 };
         let pt2 = Point { x: 4, y: 5 };
         let r = Rectangle {pt1: pt1, pt2: pt2};
-        assert_eq!(r.length(),4);
-        assert_eq!(r.width(),5);
+        assert_eq!(r.length(),5);
+        assert_eq!(r.width(),6);
+        assert_eq!(r.llx(),-1);
+        assert_eq!(r.lly(),-1);
     }
-    */
 
 }

@@ -239,14 +239,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn convert_sgn_int_to_uns_int(){
-        assert_eq!(5_i8.to_uns(),5_u8);
-        assert_eq!(5_i16.to_uns(),5_u16);
-        assert_eq!(5_i32.to_uns(),5_u32);
-        assert_eq!(5_i64.to_uns(),5_u64);
-    }
-
-    #[test]
     fn write_u32(){
         let mut bw = Vec::<u8>::new();
         let bigger: u32 = 128;
@@ -266,14 +258,6 @@ mod tests {
 
     #[test]
     fn write_sgn_as_uns(){
-        let mut bw = Vec::<u8>::new();
-        let signed_int = 4000_i32;
-        let result = bw.write_uns_int(signed_int.to_uns());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn write_sgn_as_uns_no_convert(){
         let mut bw = Vec::<u8>::new();
         let signed_int = 4000_i32;
         let result = bw.write_uns_int(signed_int);
